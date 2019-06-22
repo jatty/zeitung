@@ -1,0 +1,69 @@
+#!/usr/bin/env python3
+
+import sys
+import time
+import requests
+from bs4 import BeautifulSoup
+from datetime import date
+
+username = 'USERNAME'
+password = 'PASSWORD'
+
+prg = sys.argv[0]
+prg = prg[prg.rfind('/')+1:] # works with linux, use backslash for windows
+if prg == "nz":
+        zeitung = "nz"; zeitung_lang = "Nürnberger Zeitung"
+elif prg == "nn":
+        zeitung = "nn"; zeitung_lang = "Nürnberger Nachrichten"
+elif prg == "pz":
+        zeitung = "nn"; zeitung_lang = "Pegnitz Zeitung"
+elif prg == "bote":
+        zeitung = "nn"; zeitung_lang = "Der Bote"
+elif prg == "heb":
+        zeitung = "nn"; zeitung_lang = "Hersbrucker Zeitung"
+else:
+        print ("Zeitung nicht bekannt, bitte Python-Programm nach der jeweiligen Zeitung benennen")
+
+if len(sys.argv) > 2:
+        print ("Usage:", prg, "[datum]"), exit (1)
+if len(sys.argv) > 1:
+        if sys.argv[1] == "--help" or sys.argv[1] == "-h":
+                print ("Usage:", prg, "[datum]"), exit (1)
+        datum = sys.argv[1]
+else:
+        datum = date.today().strftime("%Y%m%d")
+
+s = requests.Session() # Session = connection keep alive + store session cookies
+s.max_redirects = 20
+r = s.get('http://' + zeitung + '.de/pdf')
+r = s.get(r.url)
+p = BeautifulSoup(r.text, "html.parser") # or 'lxml'
+for link in p.find_all('a'):
+        if link.text == 'Login':
+                rr = link.get('href')
+r = s.get(r.url + rr)
+p = BeautifulSoup(r.text, "html.parser") # or 'lxml'
+p.find('form', id='msp-login-form')
+r = s.post('https:' + p.find('form', id='msp-login-form').get('action'),
+    data = {
+        # service/page works unless more 'form' structures are on the page
+        'service': p.find('input', attrs={'name':'service'}).get('value'),
+        'page': p.find('input', attrs={'name':'page'}).get('value'),
+        'inputLogin': username, 'inputPass': password})
+short = r.url[:r.url.find('?')]
+p = BeautifulSoup(r.text, "html.parser") # or 'lxml'
+for link in p.find_all('a'):
+        h = link.get('href')
+        if h.find('&date=' + datum + '&') > 0:
+                url = short + h.strip()
+r = s.get(url)
+
+
+p = BeautifulSoup(r.text, "html.parser") # or 'lxml'
+for link in p.find_all('a'):
+        if link.text == zeitung_lang:
+                rr = short + link.get('href')
+                r = s.get(rr)
+                open(zeitung + datum + '.pdf', 'wb').write(r.content)
+                exit (0)
+exit (1)
