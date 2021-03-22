@@ -58,7 +58,7 @@ def call_newspaper():
     newspaper = r['objects'][0]['prefix']
     edition = str(r['objects'][0]['publication'])
 
-    # legitimatation login at publisher
+    # legitimation login at publisher
     r = s.get('https://' + publisher_url)
     p = BeautifulSoup(r.text, "html.parser")
     p.find('form', id='msp-login-form')
