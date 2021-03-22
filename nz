@@ -73,10 +73,10 @@ def call_newspaper():
       print ("Login wurde nicht abgefragt.")
 
     url = r.url[:r.url.find('?')]; secret = r.url[r.url.find('?'):]
-    shortsecret = secret[secret.find('='):].lstrip('=')
+    secret = secret[secret.find('='):].lstrip('=')
 
     # get ePages token
-    r = s.post('https://login-api.e-pages.dk/v1/' + publisher_url + '/private/validate/prefix/' + newspaper + '/publication/' + edition + '/token', data = '{"token": "' + shortsecret +'"}')
+    r = s.post('https://login-api.e-pages.dk/v1/' + publisher_url + '/private/validate/prefix/' + newspaper + '/publication/' + edition + '/token', data = '{"token": "' + secret +'"}')
     access_url = r.json()["access_url"]
 
     # login at library with ePages token
