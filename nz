@@ -25,8 +25,6 @@ if len(sys.argv) > 1:
 else:
         datum = date.today().strftime("%Y-%m-%d")
 
-year = datum[0:4]
-
 def call_newspaper():
     s = requests.Session()
     s.max_redirects = 20
