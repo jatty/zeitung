@@ -1,7 +1,9 @@
 #!/usr/bin/env python3
+# Nürnberg Zeitung und Nürnberger Nachrichten nutzen
+# seit 2021 https://de.wikipedia.org/wiki/ePages
 
 import sys
-import time
+import json
 import requests
 from bs4 import BeautifulSoup
 from datetime import date
@@ -10,108 +12,78 @@ username = 'USERNAME'
 password = 'PASSWORD'
 
 prg = sys.argv[0]
-prg = prg[prg.rfind('/')+1:] # works with linux, use backslash for windows
-zeitung = "nn"
-if prg == "nz":
-    zeitung = "nz"
-    zeitung_lang = "Nürnberger Zeitung"
-    zeitung_file = "_nuernberger_zeitung"
-elif prg == "nn":
-    zeitung_lang = "Nürnberger Nachrichten"
-    zeitung_file = "_nuernberger_nachrichten"
-elif prg == "ei":
-    zeitung_lang = "Altmühlbote"
-    zeitung_file =  "_altmuehlbote"
-elif prg == "lau":
-    zeitung_lang = "Der Bote"
-    zeitung_file =  "_der_bote"
-elif prg == "heb":
-    zeitung_lang = "Erlanger Nachrichten"
-    zeitung_file =  "_erlanger_nachrichten"
-elif prg == "fue":
-    zeitung_lang = "Fürther Nachrichten"
-    zeitung_file =  "_fuerther_nachrichten"
-elif prg == "heb":
-    zeitung_lang = "Hersbrucker Zeitung"
-    zeitung_file =  "_hersbrucker_zeitung"
-elif prg == "hip":
-    zeitung_lang =  "Hilpoltsteiner Zeitung"
-    zeitung_file =  "_hilpoltsteiner_zeitung"
-elif prg == "fo":
-    zeitung_lang =  "NN Forchheim"
-    zeitung_file =  "_nn_forchheim"
-elif prg == "herzo":
-    zeitung_lang =  "NN Herzogenaurach"
-    zeitung_file =  "_nn_herzogenaurach"
-elif prg == "peg":
-    zeitung_lang =  "NN Pegnitz"
-    zeitung_file =  "_nn_pegnitz"
-elif prg == "nm":
-    zeitung_lang =  "Neumarkter Nachrichten"
-    zeitung_file =  "_neumarkter_nachrichten"
-elif prg == "pz":
-    zeitung_lang = "Pegnitz Zeitung"
-    zeitung_file = "_pegnitz_zeitung"
-elif prg == "rh":
-    zeitung_lang =  "Roth-Hilpoltsteiner VZ"
-    zeitung_file =  "_roth_hilpoltsteiner_vz"
-elif prg == "sc":
-    zeitung_lang =  "Schwabacher Tagblatt"
-    zeitung_file =  "_schwabacher_tagblatt"
-elif prg == "tl":
-    zeitung_lang =  "Treuchtlinger Kurier"
-    zeitung_file =  "_treuchtlinger_kurier"
-elif prg == "wug":
-    zeitung_lang =  "Weissenburger Tagblatt"
-    zeitung_file =  "_weissenburger_tagblatt"
-else:
-    print ("Zeitung nicht bekannt, bitte Python-Programm nach der jeweiligen Zeitung benennen")
+prefix = prg[prg.rfind('/'):].lstrip('/') # works with linux, use backslash for windows
+publisher = prefix[:2]
+publisher_url = 'epaper.' + publisher + '.de'
 
 if len(sys.argv) > 2:
-        print ("Usage:", prg, "[datum]"), exit (1)
+        print ("Usage:", prg, "[YYYY-mm-dd]"), exit (1)
 if len(sys.argv) > 1:
         if sys.argv[1] == "--help" or sys.argv[1] == "-h":
-                print ("Usage:", prg, "[YYYYmmdd]"), exit (1)
+                print ("Usage:", prg, "[YYYY-mm-dd]"), exit (1)
         datum = sys.argv[1]
 else:
-        datum = date.today().strftime("%Y%m%d")
+        datum = date.today().strftime("%Y-%m-%d")
 
-file = datum + zeitung_file + '.pdf'
+year = datum[0:4]
 
-s = requests.Session() # Session = connection keep alive + store session cookies
-s.max_redirects = 20
-r = s.get('http://' + zeitung + '.de/pdf')
-r = s.get(r.url)
-p = BeautifulSoup(r.text, "html.parser") # or 'lxml'
-for link in p.find_all('a'):
-        if link.text == 'Login':
-                rr = link.get('href')
-r = s.get(r.url + rr)
-p = BeautifulSoup(r.text, "html.parser") # or 'lxml'
-p.find('form', id='msp-login-form')
-try:
-  r = s.post('https:' + p.find('form', id='msp-login-form').get('action'),
-    data = {
-        # service/page works unless more 'form' structures are on the page
-        'service': p.find('input', attrs={'name':'service'}).get('value'),
-        'page': p.find('input', attrs={'name':'page'}).get('value'),
-        'inputLogin': username, 'inputPass': password})
-except:
-  print ("Login wurde nicht abgefragt.")
-short = r.url[:r.url.find('?')]
-p = BeautifulSoup(r.text, "html.parser") # or 'lxml'
-for link in p.find_all('a'):
-        h = link.get('href')
-        if h.find('&date=' + datum + '&') > 0:
-                url = short + h.strip()
-r = s.get(url)
+def call_newspaper():
+    s = requests.Session()
+    s.max_redirects = 20
 
+    # ePages folders
+    r = s.get('https://login-api.e-pages.dk/v1/' + publisher_url + '/folders').json()
 
-p = BeautifulSoup(r.text, "html.parser") # or 'lxml'
-for link in p.find_all('a'):
-        if link.text == zeitung_lang:
-                rr = short + link.get('href')
-                r = s.get(rr)
-                open(file, 'wb').write(r.content)
-                exit (0)
-exit (1)
+    try:
+        for n in range(0, 100):
+            if prefix == r['objects'][n]['prefix']:
+                key = r['objects'][n]['key']
+                break
+    except:
+        print ("Newspaper not found. Available newspapers:")
+        try:
+            for n in range(0, 100):
+                print (r['objects'][n]['prefix'])
+        except:
+            print ("just rename this script to one of these prefixes.")
+            exit (1)
+
+    # ePages search
+    r = s.get('https://login-api.e-pages.dk/v1/' + publisher_url + '/publications/folder/' + key + '?filter=published:' + datum + ',' + datum).json()
+    if datum != r['objects'][0]['published']:
+        print ("Ausgabe des angeforderten Tages nicht gefunden.")
+        exit(1)
+
+    file = r['objects'][0]['title'] + ".pdf"
+    newspaper = r['objects'][0]['prefix']
+    edition = str(r['objects'][0]['publication'])
+
+    # legitimatation login at publisher
+    r = s.get('https://' + publisher_url)
+    p = BeautifulSoup(r.text, "html.parser")
+    p.find('form', id='msp-login-form')
+    try:
+      r = s.post('https:' + p.find('form', id='msp-login-form').get('action'),
+          data = {
+              # service/page works unless more 'form' structures are on the page
+              'service': p.find('input', attrs={'name':'service'}).get('value'),
+              'page': p.find('input', attrs={'name':'page'}).get('value'),
+              'inputLogin': username, 'inputPass': password})
+    except:
+      print ("Login wurde nicht abgefragt.")
+
+    url = r.url[:r.url.find('?')]; secret = r.url[r.url.find('?'):]
+    shortsecret = secret[secret.find('='):].lstrip('=')
+
+    # get ePages token
+    r = s.post('https://login-api.e-pages.dk/v1/' + publisher_url + '/private/validate/prefix/' + newspaper + '/publication/' + edition + '/token', data = '{"token": "' + shortsecret +'"}')
+    access_url = r.json()["access_url"]
+
+    # login at library with ePages token
+    r = s.get(access_url)
+
+    # download pdf
+    r = s.get('https://reader.' + publisher + '.de/' + newspaper + '/' + edition + '/fullpdf/')
+    open(file, 'wb').write(r.content)
+    
+call_newspaper()
