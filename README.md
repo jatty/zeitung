@@ -21,6 +21,7 @@ nnweissenburgertagblatt                   Weißenburger Tagblatt
 nntreuchtlingerkurier                     Treuchtlinger Kurier
 nnhersbruckerzeitung                      Hersbrucker Zeitung
 nnderbote                                 Der Bote
+nnpegnitzzeitung                          Pegnitz Zeitung
 nznurnbergerzeitung                       Nürnberger Zeitung
 nznordbayerischezeitungfurth              NZ Fürth
 nznordbayerischezeitungerlangen           NZ Erlangen
