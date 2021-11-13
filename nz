@@ -59,9 +59,9 @@ def call_newspaper():
     # legitimation login at publisher
     r = s.get('https://' + publisher_url)
     p = BeautifulSoup(r.text, "html.parser")
-    p.find('form', id='msp-login-form')
+    p.find('form', id='sso_form')
     try:
-      r = s.post('https:' + p.find('form', id='msp-login-form').get('action'),
+      r = s.post('https:' + p.find('form', id='sso_form').get('action'),
           data = {
               # service/page works unless more 'form' structures are on the page
               'service': p.find('input', attrs={'name':'service'}).get('value'),
