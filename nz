@@ -15,10 +15,8 @@ prefix = prg[prg.rfind('/'):].lstrip('/') # works with linux, use backslash for 
 publisher = prefix[:2]
 publisher_url = 'epaper.' + publisher + '.de'
 
-if len(sys.argv) > 2:
-        print ("Usage:", prg, "[YYYY-mm-dd]"), exit (1)
 if len(sys.argv) > 1:
-        if sys.argv[1] == "--help" or sys.argv[1] == "-h":
+        if sys.argv[1] == "--help" or sys.argv[1] == "-h" or len(sys.argv) > 2:
                 print ("Usage:", prg, "[YYYY-mm-dd]"), exit (1)
         datum = sys.argv[1]
 else:
