@@ -1,6 +1,5 @@
 #!/usr/bin/env python3
 # Nürnberger Zeitung und Nürnberger Nachrichten nutzen
-# seit 2021 https://de.wikipedia.org/wiki/ePages
 
 import sys
 import json
